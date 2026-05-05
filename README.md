@@ -29,27 +29,27 @@ matemático da distância euclidiana.
 
 Para superar os limites de hardware e a restrição de 100MB do GitHub, aplicamos as seguintes técnicas:
 
-1. Quantização Linear de 16-bits
+#### 1. Quantização Linear de 16-bits
 
 Foi reduzida a precisão dos vetores de float32 (4 bytes) para uint16 (2 bytes) durante a extração.
 
 - Impacto: O índice binário (ivf.bin) foi reduzido de 180MB para 90MB, permitindo o armazenamento no Git e melhorando o uso do cache da CPU.
 - Estrutura do Registro (30 bytes): [14]uint16 (vetor) + uint8 (label) + uint8 (padding).
 
-2. Zero-Copy com syscall.Mmap
+#### 2. Zero-Copy com syscall.Mmap
 
 Em vez de carregar o arquivo na RAM ou usar io.ReadAt, foi mapeado o arquivo diretamente no espaço de endereçamento virtual do processo.
 
 - O acesso aos dados é feito via unsafe.Slice, tratando os bytes do arquivo como structs nativas do Go sem nenhuma cópia intermediária.
 
-3. Busca Vetorial IVF (Inverted File Index)
+#### 3. Busca Vetorial IVF (Inverted File Index)
 
 O dataset de 3 milhões de registros é particionado em 1732 buckets.
 
 - A API realiza uma busca linear nos centroides para identificar os 4 buckets mais prováveis ($N=4$).
 - A busca final é restrita a apenas ~0.2% da base total, garantindo a latência de 3ms.
 
-4. Gestão de Recursos Docker
+#### 4. Gestão de Recursos Docker
 
 - GOMAXPROCS=1: Evita o process-thrashing em ambientes com CPU limitada.
 - Prefork: false: Otimiza a estabilidade das Goroutines sob carga extrema.
