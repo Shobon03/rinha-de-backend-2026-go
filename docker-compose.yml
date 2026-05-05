@@ -1,8 +1,9 @@
 services:
   api1:
     build: .
+    image: shobon03/rinha-backend-2026-go:latest
     volumes:
-      - ./resources:/app/resources
+      - ./resources:/app/resources:ro
     deploy:
       resources:
         limits:
@@ -11,8 +12,9 @@ services:
 
   api2:
     build: .
+    image: shobon03/rinha-backend-2026-go:latest
     volumes:
-      - ./resources:/app/resources
+      - ./resources:/app/resources:ro
     deploy:
       resources:
         limits:
