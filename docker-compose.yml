@@ -1,8 +1,6 @@
 services:
   api1:
-    build: .
-    volumes:
-      - ./resources:/app/resources
+    image: shobon03/rinha-backend-2026-go:latest
     deploy:
       resources:
         limits:
@@ -10,9 +8,7 @@ services:
           memory: 150M
 
   api2:
-    build: .
-    volumes:
-      - ./resources:/app/resources
+    image: shobon03/rinha-backend-2026-go:latest
     deploy:
       resources:
         limits:
