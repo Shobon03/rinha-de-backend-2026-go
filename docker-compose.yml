@@ -15,7 +15,7 @@ services:
       - rinha-network
 
   api2:
-    image: shobon03/rinha-backend-2026-go:latest
+    image: shobon03/rinha-backend-2026-go@sha256:62dba4aa13faaa1708949f45bdae2e029ef4d373e5c09a5f06cc8d70bf21d35e
     security_opt:
       - seccomp=unconfined
     environment:
