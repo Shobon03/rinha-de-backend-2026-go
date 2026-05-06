@@ -11,7 +11,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.45"
+          cpus: "0.4"
           memory: 150MB
     networks:
       - rinha-network
@@ -28,7 +28,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.45"
+          cpus: "0.4"
           memory: 150MB
     networks:
       - rinha-network
@@ -39,7 +39,7 @@ services:
       - "9999:9999"
     volumes:
       - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
-      - shared-socket:/tmp:ro
+      - shared-socket:/tmp
     depends_on:
       - api1
       - api2
