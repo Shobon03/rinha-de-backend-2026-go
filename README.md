@@ -89,7 +89,7 @@ A API possui as seguintes rotas:
 - `GET /ready`: Verifica se o servidor está pronto para receber requisições, envia `204 No Content`.
 - `POST /fraud-score`: Realiza o cálculo de pontuação de fraude para um cliente, envia `200 OK` com o resultado, sendo o seguinte JSON:
 
-```JSON
+```JSONC
 { "approved": true, "score": 0 } // Aprovado
 { "approved": false, "score": 1 } // Reprovado
 ```
