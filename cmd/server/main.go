@@ -14,11 +14,15 @@ import (
 
 func main() {
 	// Initialize state before registering routes
-	state := &api.ApiState{
-		Normalization: util.LoadFileJson[models.Normalization]("normalization.json"),
-		MccRisk:       util.LoadFileJson[models.MccRisk]("mcc_risk.json"),
-		IVF:           vector.LoadIVF(),
-	}
+	state := &api.ApiState{}
+
+	go func() {
+		log.Println("Loading IVF index in background...")
+		state.Normalization = util.LoadFileJson[models.Normalization]("normalization.json")
+		state.MccRisk = util.LoadFileJson[models.MccRisk]("mcc_risk.json")
+		state.IVF = vector.LoadIVF()
+		log.Println("IVF index loaded and ready.")
+	}()
 
 	// Open Unix Socket Domain and register routes
 	socketPath := os.Getenv("SOCKET_PATH")
