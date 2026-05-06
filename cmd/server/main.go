@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
 func main() {
@@ -24,6 +25,9 @@ func main() {
 	if socketPath == "" {
 		socketPath = "/tmp/go-api.sock"
 	}
+
+	// Ensure the directory exists
+	os.MkdirAll(filepath.Dir(socketPath), 0777)
 	os.Remove(socketPath)
 
 	listener, err := net.Listen("unix", socketPath)
