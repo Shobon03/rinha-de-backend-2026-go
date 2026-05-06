@@ -1,10 +1,10 @@
 package api
 
 import (
-	"net/http"
+	"github.com/gofiber/fiber/v3"
 )
 
-func RegisterRoutes(state *ApiState) {
-	http.HandleFunc("/ready", state.IsReadyHandler)
-	http.HandleFunc("/fraud-score", state.ProcessPaymentFraudHandler)
+func RegisterRoutes(app *fiber.App, state *ApiState) {
+	app.Get("/ready", state.IsReadyHandler)
+	app.Post("/fraud-score", state.ProcessPaymentFraudHandler)
 }
