@@ -20,7 +20,10 @@ func main() {
 	}
 
 	// Open Unix Socket Domain and register routes
-	socketPath := "/tmp/go-api.sock"
+	socketPath := os.Getenv("SOCKET_PATH")
+	if socketPath == "" {
+		socketPath = "/tmp/go-api.sock"
+	}
 	os.Remove(socketPath)
 
 	listener, err := net.Listen("unix", socketPath)
