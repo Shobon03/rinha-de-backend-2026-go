@@ -1,31 +1,37 @@
 services:
   api1:
-    image: shobon03/rinha-backend-2026-go@sha256:62dba4aa13faaa1708949f45bdae2e029ef4d373e5c09a5f06cc8d70bf21d35e
+    image: shobon03/rinha-backend-2026-go@sha256:9fbb9f9970f60c6adf8cea308e8483fa1dd39ddb2ffba713477e173c507b2759
     security_opt:
       - seccomp=unconfined
     environment:
       - GOMAXPROCS=1
       - GOGC=100
+      - SOCKET_PATH=/tmp/api1.sock
     deploy:
       resources:
         limits:
           cpus: "0.45"
           memory: 150MB
+    volumes:
+      - socket-dir:/tmp
     networks:
       - rinha-network
 
   api2:
-    image: shobon03/rinha-backend-2026-go@sha256:62dba4aa13faaa1708949f45bdae2e029ef4d373e5c09a5f06cc8d70bf21d35e
+    image: shobon03/rinha-backend-2026-go@sha256:9fbb9f9970f60c6adf8cea308e8483fa1dd39ddb2ffba713477e173c507b2759
     security_opt:
       - seccomp=unconfined
     environment:
       - GOMAXPROCS=1
       - GOGC=100
+      - SOCKET_PATH=/tmp/api2.sock
     deploy:
       resources:
         limits:
           cpus: "0.45"
           memory: 150MB
+    volumes:
+      - socket-dir:/tmp
     networks:
       - rinha-network
 
@@ -35,6 +41,7 @@ services:
       - "9999:9999"
     volumes:
       - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - socket-dir:/tmp
     depends_on:
       - api1
       - api2
@@ -49,3 +56,6 @@ services:
 networks:
   rinha-network:
     driver: bridge
+
+volumes:
+  socket-dir:
