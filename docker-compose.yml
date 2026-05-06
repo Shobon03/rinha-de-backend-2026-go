@@ -5,7 +5,7 @@ services:
       - seccomp=unconfined
     environment:
       - GOMAXPROCS=1
-      - GOGC=800
+      - GOGC=100
       - SOCKET_PATH=/sockets/api1.sock
     volumes:
       - ./resources:/app/resources:ro
@@ -13,8 +13,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.4"
-          memory: 150MB
+          cpus: "0.45"
+          memory: 155MB
     networks:
       - rinha-network
 
@@ -24,7 +24,7 @@ services:
       - seccomp=unconfined
     environment:
       - GOMAXPROCS=1
-      - GOGC=800
+      - GOGC=100
       - SOCKET_PATH=/sockets/api2.sock
     volumes:
       - ./resources:/app/resources:ro
@@ -32,8 +32,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.4"
-          memory: 150MB
+          cpus: "0.45"
+          memory: 155MB
     networks:
       - rinha-network
 
@@ -51,7 +51,7 @@ services:
       resources:
         limits:
           cpus: "0.1"
-          memory: 50MB
+          memory: 40MB
     networks:
       - rinha-network
 
