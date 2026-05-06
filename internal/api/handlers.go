@@ -1,11 +1,20 @@
 package api
 
 import (
+	"io"
 	"ivf-golang/internal/models"
 	"ivf-golang/internal/vector"
+	"net/http"
+	"sync"
 
-	"github.com/gofiber/fiber/v3"
+	"github.com/goccy/go-json"
 )
+
+var bufferPool = sync.Pool{
+	New: func() interface{} {
+		return make([]byte, 4096) // 4KB for the fraud-score payload
+	},
+}
 
 type ApiState struct {
 	Normalization models.Normalization
@@ -13,21 +22,35 @@ type ApiState struct {
 	IVF           *models.IVFIndex
 }
 
-func (state *ApiState) IsReadyHandler(c fiber.Ctx) error {
+func (state *ApiState) IsReadyHandler(w http.ResponseWriter, r *http.Request) {
 	if state.IVF == nil {
-		return c.SendStatus(fiber.StatusServiceUnavailable)
+		w.WriteHeader(http.StatusServiceUnavailable)
+		return
 	}
-	return c.SendStatus(fiber.StatusNoContent)
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
-func (state *ApiState) ProcessPaymentFraudHandler(c fiber.Ctx) error {
+func (state *ApiState) ProcessPaymentFraudHandler(w http.ResponseWriter, r *http.Request) {
 	if state.IVF == nil {
-		return c.SendStatus(fiber.StatusServiceUnavailable)
+		w.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+
+	buf := bufferPool.Get().([]byte)
+	defer bufferPool.Put(buf)
+
+	// Read body into the pre-allocated buffer
+	n, err := r.Body.Read(buf)
+	if err != nil && err != io.EOF {
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	var transactionRequest models.FraudScoreRequest
-	if err := c.Bind().JSON(&transactionRequest); err != nil {
-		return c.SendStatus(fiber.StatusBadRequest)
+	if err := json.Unmarshal(buf[:n], &transactionRequest); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	// Normalize the request
@@ -40,7 +63,8 @@ func (state *ApiState) ProcessPaymentFraudHandler(c fiber.Ctx) error {
 	// Calculate fraud score
 	fraudScore := vector.SearchAndCheckFraudScore(bestRecords)
 
-	return c.JSON(models.FraudScoreResponse{
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(models.FraudScoreResponse{
 		Approved:   fraudScore < 0.6,
 		FraudScore: fraudScore,
 	})

@@ -6,19 +6,20 @@ import (
 	"ivf-golang/internal/util"
 	"ivf-golang/internal/vector"
 	"log"
-
-	"github.com/goccy/go-json"
-	"github.com/gofiber/fiber/v3"
+	"net"
+	"net/http"
+	"os"
 )
 
 func main() {
-	app := fiber.New(fiber.Config{
-		JSONEncoder: json.Marshal,
-		JSONDecoder: json.Unmarshal,
-	})
-
 	state := &api.ApiState{}
-	api.RegisterRoutes(app, state)
+
+	// Establish a Unix Socket Domain connection
+	socketPath := os.Getenv("SOCKET_PATH")
+	if socketPath == "" {
+		socketPath = "/tmp/go-api.sock"
+	}
+	os.Remove(socketPath)
 
 	go func() {
 		defer func() {
@@ -33,8 +34,19 @@ func main() {
 		log.Println("Ready to serve requests!")
 	}()
 
-	log.Println("Server listening on TCP :8080")
-	if err := app.Listen(":8080"); err != nil {
+	listener, err := net.Listen("unix", socketPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer listener.Close()
+
+	os.Chmod(socketPath, 0777)
+
+	api.RegisterRoutes(state)
+
+	log.Println("Server listening on UDS:", socketPath)
+	if err := http.Serve(listener, nil); err != nil {
 		log.Fatal(err)
 	}
 }
