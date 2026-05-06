@@ -9,35 +9,26 @@ O sistema foi desenhado seguindo princípios de **Zero-Allocation** e **Zero-Cop
 
 ### Componentes:
 
-- **Load Balancer**: HAProxy configurado com comunicação via **Unix Domain Sockets (UDS)**.
+- **Load Balancer**: HAProxy configurado com 2 instâncias de API.
 - **API**: 2 instâncias de Go 1.26+ utilizando a biblioteca padrão (`net/http`) para overhead mínimo.
 - **Engine de Busca**: IVF (Inverted File Index) customizado com K-Nearest Neighbors (KNN).
 
-### Otimizações de "Estado da Arte"
+## API
 
-#### 1. Comunicação via Unix Domain Sockets (UDS)
+- `GET /ready`: Retorna `204 No Content` quando o índice está carregado.
+- `POST /fraud-score`: Recebe o payload da transação e retorna o score de fraude.
 
-Eliminamos o overhead da pilha de rede TCP/IP na comunicação entre o Load Balancer e as APIs, utilizando sockets locais. Isso reduz a latência e o uso de CPU em ambientes restritos.
+## Estrutura de Pastas
 
-#### 2. Zero-Allocation JSON Parsing
-
-Utilizamos um `sync.Pool` de buffers para ler e decodificar os payloads JSON. Isso evita alocações frequentes no heap, reduzindo drasticamente a pressão sobre o Garbage Collector (GC) e evitando picos de latência (p99).
-
-#### 3. Matemática Inteira (Integer Squared Distance)
-
-A busca vetorial utiliza aritmética de inteiros (`int64`) para calcular a distância quadrada entre vetores quantizados. Isso elimina a necessidade de operações de ponto flutuante caras e permite um _early exit_ agressivo durante a busca.
-
-#### 4. Zero-Copy com syscall.Mmap
-
-O índice binário de 3 milhões de registros é mapeado diretamente no espaço de endereçamento virtual do processo. O acesso aos dados é feito via `unsafe.Slice`, tratando os bytes do arquivo como structs nativas sem nenhuma cópia intermediária.
-
-#### 5. Quantização Linear de 16-bits
-
-Reduzimos a precisão dos vetores de `float32` (4 bytes) para `uint16` (2 bytes). O índice final (`ivf.bin`) ocupa ~90MB, permitindo que o conjunto de dados caia no cache da CPU com mais eficiência.
-
-#### 6. Busca Vetorial IVF (Inverted File Index)
-
-O dataset é particionado em 1024 buckets. A API identifica os 4 buckets mais prováveis ($N=4$) e realiza a busca exata apenas neles (~0.4% da base total).
+```plaintext
+├── cmd/server      # Entrypoint da API (UDS Listener)
+├── internal/vector  # Engine de busca IVF, Mmap e Normalização
+├── internal/api     # Handlers e Rotas (Standard Library)
+├── internal/models  # Definições de structs e tipos
+├── resources/       # ivf.bin e metadados JSON
+├── scripts/         # Script de extração e quantização (K-Means)
+└── test/            # Scripts de teste k6 e massa de dados
+```
 
 ## Como Executar
 
@@ -64,22 +55,27 @@ docker compose up -d --build
 k6 run test/test.js
 ```
 
-## Estrutura de Pastas
+### Otimizações
 
-```plaintext
-├── cmd/server      # Entrypoint da API (UDS Listener)
-├── internal/vector  # Engine de busca IVF, Mmap e Normalização
-├── internal/api     # Handlers e Rotas (Standard Library)
-├── internal/models  # Definições de structs e tipos
-├── resources/       # ivf.bin e metadados JSON
-├── scripts/         # Script de extração e quantização (K-Means)
-└── test/            # Scripts de teste k6 e massa de dados
-```
+#### 1. Zero-Allocation JSON Parsing
 
-## API
+Utiliza um `sync.Pool` de buffers para ler e decodificar os payloads JSON. Isso evita alocações frequentes no heap, reduzindo drasticamente a pressão sobre o Garbage Collector (GC) e evitando picos de latência (p99).
 
-- `GET /ready`: Retorna `204 No Content` quando o índice está carregado.
-- `POST /fraud-score`: Recebe o payload da transação e retorna o score de fraude.
+#### 2. Matemática Inteira (Integer Squared Distance)
+
+A busca vetorial utiliza aritmética de inteiros (`int64`) para calcular a distância quadrada entre vetores quantizados. Isso elimina a necessidade de operações de ponto flutuante caras e permite um _early exit_ agressivo durante a busca.
+
+#### 3. Zero-Copy com syscall.Mmap
+
+O índice binário de 3 milhões de registros é mapeado diretamente no espaço de endereçamento virtual do processo. O acesso aos dados é feito via `unsafe.Slice`, tratando os bytes do arquivo como structs nativas sem nenhuma cópia intermediária.
+
+#### 4. Quantização Linear de 16-bits
+
+Reduzida a precisão dos vetores de `float32` (4 bytes) para `uint16` (2 bytes). O índice final (`ivf.bin`) ocupa ~90MB, permitindo que o conjunto de dados caia no cache da CPU com mais eficiência.
+
+#### 5. Busca Vetorial IVF (Inverted File Index)
+
+O dataset é particionado em 1024 buckets. A API identifica os 4 buckets mais prováveis ($N=4$) e realiza a busca exata apenas neles (~0.4% da base total).
 
 ## Licença
 
