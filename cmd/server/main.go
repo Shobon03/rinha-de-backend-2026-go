@@ -35,11 +35,11 @@ func main() {
 
 	defer func() {
 		if r := recover(); r != nil {
-			crashMsg := fmt.Sprintf("CRASH NA INICIALIZACAO: %v", r)
+			crashMsg := fmt.Sprintf("INIT CRASH: %v", r)
 			log.Println(crashMsg)
 
 			http.HandleFunc("/ready", func(w http.ResponseWriter, req *http.Request) {
-				w.WriteHeader(http.StatusInternalServerError)
+				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(crashMsg))
 			})
 
