@@ -96,7 +96,7 @@ A API possui as seguintes rotas:
 
 ## Licença
 
-Este projeto está licenciado sob a GPL-3.0. [Ver licença](LICENSE).
+Este projeto está licenciado sob a licença MIT. [Ver licença](LICENSE).
 
 ---
 
