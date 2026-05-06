@@ -6,10 +6,9 @@ services:
     environment:
       - GOMAXPROCS=1
       - GOGC=100
-      - SOCKET_PATH=/sockets/api1.sock
+      - SOCKET_PATH=/tmp/api1.sock
     volumes:
-      - ./resources:/app/resources:ro
-      - shared-socket:/sockets:rw
+      - shared-socket:/tmp:rw
     deploy:
       resources:
         limits:
@@ -25,10 +24,9 @@ services:
     environment:
       - GOMAXPROCS=1
       - GOGC=100
-      - SOCKET_PATH=/sockets/api2.sock
+      - SOCKET_PATH=/tmp/api2.sock
     volumes:
-      - ./resources:/app/resources:ro
-      - shared-socket:/sockets:rw
+      - shared-socket:/tmp:rw
     deploy:
       resources:
         limits:
@@ -43,7 +41,7 @@ services:
       - "9999:9999"
     volumes:
       - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
-      - shared-socket:/sockets:rw
+      - shared-socket:/tmp:rw
     depends_on:
       - api1
       - api2
@@ -65,4 +63,4 @@ volumes:
     driver_opts:
       type: tmpfs
       device: tmpfs
-      o: size=16m,mode=1777
+      o: size=16m,mode=0777
