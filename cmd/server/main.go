@@ -6,26 +6,36 @@ import (
 	"ivf-golang/internal/util"
 	"ivf-golang/internal/vector"
 	"log"
-
-	"github.com/goccy/go-json"
-	"github.com/gofiber/fiber/v3"
+	"net"
+	"net/http"
+	"os"
 )
 
 func main() {
+	// Initialize state before registering routes
 	state := &api.ApiState{
 		Normalization: util.LoadFileJson[models.Normalization]("normalization.json"),
 		MccRisk:       util.LoadFileJson[models.MccRisk]("mcc_risk.json"),
 		IVF:           vector.LoadIVF(),
 	}
 
-	app := fiber.New(fiber.Config{
-		JSONEncoder: json.Marshal,
-		JSONDecoder: json.Unmarshal,
-	})
-	api.RegisterRoutes(app, state)
+	// Open Unix Socket Domain and register routes
+	socketPath := "/tmp/go-api.sock"
+	os.Remove(socketPath)
 
-	log.Fatal(app.Listen(":9999", fiber.ListenConfig{
-		EnablePrefork:         false,
-		DisableStartupMessage: true,
-	}))
+	listener, err := net.Listen("unix", socketPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer listener.Close()
+
+	os.Chmod(socketPath, 0777)
+
+	api.RegisterRoutes(state)
+
+	log.Println("Server listening on UDS:", socketPath)
+	if err := http.Serve(listener, nil); err != nil {
+		log.Fatal(err)
+	}
 }

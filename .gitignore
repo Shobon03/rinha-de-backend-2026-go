@@ -1,2 +1,4 @@
 extract
 server
+
+!cmd/server

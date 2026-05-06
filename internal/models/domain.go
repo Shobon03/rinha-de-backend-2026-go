@@ -6,7 +6,7 @@ package models
 type FlatRecord struct {
 	Vector  [14]uint16
 	Label   uint8
-	Padding uint8
+	Padding [3]uint8 // 28 + 1 + 3 = 32 bytes for cache alignment
 }
 
 type FlatIndex struct {

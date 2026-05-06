@@ -2,13 +2,14 @@ package util
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 	"path/filepath"
 )
 
 func Check(err error) {
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
 

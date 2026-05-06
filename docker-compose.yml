@@ -2,31 +2,51 @@ services:
   api1:
     build: .
     image: shobon03/rinha-backend-2026-go:latest
+    hostname: api1
+    container_name: api1
+    environment:
+      - GOMAXPROCS=1
+      - GOGC=800
     volumes:
       - ./resources:/app/resources:ro
+      - socket1:/tmp
     deploy:
       resources:
         limits:
-          cpus: "0.4"
-          memory: 150M
+          cpus: "0.45"
+          memory: 150MB
+    networks:
+      - rinha-network
 
   api2:
     build: .
     image: shobon03/rinha-backend-2026-go:latest
+    hostname: api2
+    container_name: api2
+    environment:
+      - GOMAXPROCS=1
+      - GOGC=800
     volumes:
       - ./resources:/app/resources:ro
+      - socket2:/tmp
     deploy:
       resources:
         limits:
-          cpus: "0.4"
-          memory: 150M
+          cpus: "0.45"
+          memory: 150MB
+    networks:
+      - rinha-network
 
   haproxy:
     image: haproxy:latest
+    hostname: haproxy
+    container_name: haproxy
     ports:
       - "9999:9999"
     volumes:
       - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - socket1:/tmp/api1
+      - socket2:/tmp/api2
     depends_on:
       - api1
       - api2
@@ -34,4 +54,14 @@ services:
       resources:
         limits:
           cpus: "0.1"
-          memory: 50M
+          memory: 50MB
+    networks:
+      - rinha-network
+
+networks:
+  rinha-network:
+    driver: bridge
+
+volumes:
+  socket1:
+  socket2:

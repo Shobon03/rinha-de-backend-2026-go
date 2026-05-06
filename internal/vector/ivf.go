@@ -9,7 +9,7 @@ import (
 	"syscall"
 )
 
-const NumCentroids = 1732
+const NumCentroids = 1024
 
 func LoadIVF() *models.IVFIndex {
 	path := filepath.Join("resources", "ivf.bin")

@@ -3,12 +3,12 @@ package vector
 import (
 	"ivf-golang/internal/models"
 	"ivf-golang/internal/util"
-	"slices"
+	"math"
 	"unsafe"
 )
 
 var (
-	N = 4 // Number of centroids to search
+	N = 4 // Number of centroids to search (Optimized for K-Means)
 	K = 5 // Number of nearest neighbors
 )
 
@@ -19,87 +19,63 @@ type CentroidDistance struct {
 
 type RecordDistance struct {
 	Record   models.FlatRecord
-	Distance float32
+	Distance uint64
 }
 
 func GetCentroids(vector models.Vector, centroids models.Centroids) []CentroidDistance {
-	// Maintain a sorted slice of the top N closest centroids.
-	bestCentroids := make([]CentroidDistance, 0, N)
+	var best [4]CentroidDistance
+	for i := range N {
+		best[i].Distance = math.MaxFloat32
+		best[i].Index = -1
+	}
 
 	for i, centroid := range centroids {
 		dist := util.CalculateEuclidianDistance(vector, centroid)
 
-		if len(bestCentroids) < N {
-			bestCentroids = append(bestCentroids, CentroidDistance{Index: i, Distance: dist})
-			slices.SortFunc(bestCentroids, func(a, b CentroidDistance) int {
-				if a.Distance < b.Distance {
-					return -1
-				}
-				if a.Distance > b.Distance {
-					return 1
-				}
-				return 0
-			})
-		} else if dist < bestCentroids[N-1].Distance {
-			bestCentroids[N-1] = CentroidDistance{Index: i, Distance: dist}
-			slices.SortFunc(bestCentroids, func(a, b CentroidDistance) int {
-				if a.Distance < b.Distance {
-					return -1
-				}
-				if a.Distance > b.Distance {
-					return 1
-				}
-				return 0
-			})
+		if dist < best[3].Distance {
+			best[3] = CentroidDistance{Index: i, Distance: dist}
+			for j := 3; j > 0 && best[j].Distance < best[j-1].Distance; j-- {
+				best[j], best[j-1] = best[j-1], best[j]
+			}
 		}
 	}
 
-	return bestCentroids
+	return best[:]
 }
 
 func GetBuckets(vector models.Vector, bestCentroids []CentroidDistance, ivf *models.IVFIndex) []RecordDistance {
-	var bestK []RecordDistance
+	q := util.QuantizeVector(vector)
+	bestK := make([]RecordDistance, 0, K)
 
-	// For each centroid, find the closest K vectors
 	for _, centroid := range bestCentroids {
+		if centroid.Index == -1 {
+			continue
+		}
 		bucketInfo := ivf.BucketIndexes[centroid.Index]
 		if bucketInfo.Count == 0 {
 			continue
 		}
 
-		// Offset: Centroids (1732*14*4) + Indexes (1732*8) = 110848
-		// Record Size: 30 bytes
-		offset := 110848 + (int64(bucketInfo.StartIndex) * 30)
-
-		// Zero-copy: access the mmap'ed data directly from the byte slice
-		// No ReadAt, no buffer allocation, no sync.Pool.
+		offset := int64(NumCentroids)*64 + (int64(bucketInfo.StartIndex) * 32)
 		records := unsafe.Slice((*models.FlatRecord)(unsafe.Pointer(&ivf.Data[offset])), bucketInfo.Count)
 
 		for _, record := range records {
-			dist := util.CalculateEuclidianDistanceQuantized(vector, record.Vector)
+			var threshold uint64 = math.MaxUint64
+			if len(bestK) == K {
+				threshold = bestK[K-1].Distance
+			}
 
-			if len(bestK) < K {
-				bestK = append(bestK, RecordDistance{Record: record, Distance: dist})
-				slices.SortFunc(bestK, func(a, b RecordDistance) int {
-					if a.Distance < b.Distance {
-						return -1
-					}
-					if a.Distance > b.Distance {
-						return 1
-					}
-					return 0
-				})
-			} else if dist < bestK[K-1].Distance {
-				bestK[K-1] = RecordDistance{Record: record, Distance: dist}
-				slices.SortFunc(bestK, func(a, b RecordDistance) int {
-					if a.Distance < b.Distance {
-						return -1
-					}
-					if a.Distance > b.Distance {
-						return 1
-					}
-					return 0
-				})
+			dist := util.CalculateEuclidianDistanceInteger(q, record.Vector, threshold)
+
+			if dist < threshold {
+				if len(bestK) < K {
+					bestK = append(bestK, RecordDistance{Record: record, Distance: dist})
+				} else {
+					bestK[K-1] = RecordDistance{Record: record, Distance: dist}
+				}
+				for j := len(bestK) - 1; j > 0 && bestK[j].Distance < bestK[j-1].Distance; j-- {
+					bestK[j], bestK[j-1] = bestK[j-1], bestK[j]
+				}
 			}
 		}
 	}
@@ -108,6 +84,10 @@ func GetBuckets(vector models.Vector, bestCentroids []CentroidDistance, ivf *mod
 }
 
 func SearchAndCheckFraudScore(bestRecords []RecordDistance) float32 {
+	if len(bestRecords) == 0 {
+		return 0.0
+	}
+
 	fraudVotes := float32(0.0)
 	for _, record := range bestRecords {
 		if record.Record.Label == 1 {

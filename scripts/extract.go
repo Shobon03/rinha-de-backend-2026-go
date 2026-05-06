@@ -11,9 +11,12 @@ import (
 	"fmt"
 	"ivf-golang/internal/models"
 	"ivf-golang/internal/util"
+	"ivf-golang/internal/vector"
 	"math"
 	"os"
 	"path/filepath"
+	"runtime"
+	"sync"
 
 	json "github.com/goccy/go-json"
 )
@@ -59,17 +62,86 @@ func ExtractReferences() {
 }
 
 func SelectCentroids() {
-	fmt.Println("Selecting centroids")
-	// Select centroids
-	total := int(math.Sqrt(float64(len(references))))
+	fmt.Println("Selecting centroids with Parallel K-Means")
+	total := vector.NumCentroids
 	centroids = make([]Reference, total)
 
+	// 1. Initial Selection: Regular intervals
 	for i := 0; i < total; i++ {
-		// Divides references into total slices and selects the middle element as the centroid
-		start := i * total
-		end := min((i+1)*total, len(references))
-		baseSlice := references[start:end]
-		centroids[i] = baseSlice[len(baseSlice)/2]
+		centroids[i] = references[(i*len(references))/total]
+	}
+
+	// 2. Iterations
+	iterations := 30
+	numWorkers := runtime.NumCPU()
+	fmt.Printf("Using %d CPU cores for parallel processing\n", numWorkers)
+
+	for iter := 0; iter < iterations; iter++ {
+		fmt.Printf("K-Means Iteration %d/%d\n", iter+1, iterations)
+
+		newCentroids := make([][14]float64, total)
+		counts := make([]int, total)
+		var mu sync.Mutex
+
+		// Parallel Assignment Step
+		var wg sync.WaitGroup
+		chunkSize := (len(references) + numWorkers - 1) / numWorkers
+
+		for w := 0; w < numWorkers; w++ {
+			wg.Add(1)
+			go func(workerID int) {
+				defer wg.Done()
+				start := workerID * chunkSize
+				end := start + chunkSize
+				if end > len(references) {
+					end = len(references)
+				}
+				if start >= end {
+					return
+				}
+
+				localNewCentroids := make([][14]float64, total)
+				localCounts := make([]int, total)
+
+				for i := start; i < end; i++ {
+					ref := references[i]
+					minDist := float32(math.MaxFloat32)
+					bestC := 0
+					for j, c := range centroids {
+						dist := util.CalculateEuclidianDistance(ref.Vector, c.Vector)
+						if dist < minDist {
+							minDist = dist
+							bestC = j
+						}
+					}
+					for j := 0; j < 14; j++ {
+						localNewCentroids[bestC][j] += float64(ref.Vector[j])
+					}
+					localCounts[bestC]++
+				}
+
+				mu.Lock()
+				for i := 0; i < total; i++ {
+					for j := 0; j < 14; j++ {
+						newCentroids[i][j] += localNewCentroids[i][j]
+					}
+					counts[i] += localCounts[i]
+				}
+				mu.Unlock()
+			}(w)
+		}
+		wg.Wait()
+
+		// Update step
+		for i := 0; i < total; i++ {
+			if counts[i] > 0 {
+				var updatedVector [14]float32
+				for j := 0; j < 14; j++ {
+					updatedVector[j] = float32(newCentroids[i][j] / float64(counts[i]))
+				}
+				centroids[i] = Reference{Vector: updatedVector}
+			}
+		}
 	}
 }
 
@@ -78,19 +150,48 @@ func AttributeBuckets() {
 
 	buckets := make([][]Reference, len(centroids))
 
-	// Calculate each point to its distance from each centroid and attribute it to the closest bucket
-	for _, ref := range references {
-		minDistance := float32(math.MaxFloat32)
-		bucketIndex := 0
-		for i, centroid := range centroids {
-			distance := util.CalculateEuclidianDistance(ref.Vector, centroid.Vector)
-			if distance < minDistance {
-				minDistance = distance
-				bucketIndex = i
+	// Parallel bucket attribution
+	numWorkers := runtime.NumCPU()
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+	chunkSize := (len(references) + numWorkers - 1) / numWorkers
+
+	for w := 0; w < numWorkers; w++ {
+		wg.Add(1)
+		go func(workerID int) {
+			defer wg.Done()
+			start := workerID * chunkSize
+			end := start + chunkSize
+			if end > len(references) {
+				end = len(references)
 			}
-		}
-		buckets[bucketIndex] = append(buckets[bucketIndex], ref)
+			if start >= end {
+				return
+			}
+
+			localBuckets := make([][]Reference, len(centroids))
+			for i := start; i < end; i++ {
+				ref := references[i]
+				minDist := float32(math.MaxFloat32)
+				bestC := 0
+				for j, c := range centroids {
+					dist := util.CalculateEuclidianDistance(ref.Vector, c.Vector)
+					if dist < minDist {
+						minDist = dist
+						bestC = j
+					}
+				}
+				localBuckets[bestC] = append(localBuckets[bestC], ref)
+			}
+
+			mu.Lock()
+			for i := 0; i < len(centroids); i++ {
+				buckets[i] = append(buckets[i], localBuckets[i]...)
+			}
+			mu.Unlock()
+		}(w)
 	}
+	wg.Wait()
 
 	fmt.Println("Buckets attributed, writing to file")
 

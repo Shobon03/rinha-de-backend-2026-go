@@ -8,5 +8,4 @@ FROM scratch
 WORKDIR /app
 COPY --from=builder /app/api /app/api
 COPY resources/ /app/resources/
-EXPOSE 9999
 CMD ["/app/api"]

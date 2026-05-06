@@ -33,7 +33,7 @@ Em vez de carregar o arquivo na RAM ou usar io.ReadAt, foi mapeado o arquivo dir
 
 #### 3. Busca Vetorial IVF (Inverted File Index)
 
-O dataset de 3 milhões de registros é particionado em 1732 buckets.
+O dataset de 3 milhões de registros é particionado em 1024 buckets.
 
 - A API realiza uma busca linear nos centroides para identificar os 4 buckets mais prováveis ($N=4$).
 - A busca final é restrita a apenas ~0.2% da base total, garantindo a latência de 3ms.
