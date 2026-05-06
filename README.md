@@ -3,17 +3,6 @@
 Este projeto é uma implementação de um motor de detecção de fraude ultrarrápido para a Rinha de Backend 2026. A solução utiliza técnicas avançadas
 de busca vetorial e engenharia de software de baixo nível para atingir latências sub-milissegundo com alta precisão.
 
-# Resultados (Benchmark Oficial com k6)
-
-[Ver resultado](./test/results-n4-k5.json).
-
-Nos testes de carga simulando o ambiente restrito da Rinha (1.0 CPU / 350MB RAM), o projeto atingiu o seguinte patamar:
-
-- Score Final: 4489.69
-- P99 Latency: 3.70ms
-- Taxa de Sucesso: 99.91% (Apenas 50 erros em 54.100 requisições)
-- Erros HTTP: 0
-
 # Arquitetura Técnica
 
 O sistema foi desenhado seguindo princípios de Zero-Allocation e Zero-Copy, garantindo que a CPU seja utilizada quase exclusivamente para o cálculo
@@ -91,6 +80,18 @@ k6 run test/test.js
 ├── resources/ # ivf.bin e metadados JSON
 ├── scripts/ # Script de extração e quantização
 └── test/ # Scripts de teste k6 e massa de dados
+```
+
+## API
+
+A API possui as seguintes rotas:
+
+- `GET /ready`: Verifica se o servidor está pronto para receber requisições, envia `204 No Content`.
+- `POST /fraud-score`: Realiza o cálculo de pontuação de fraude para um cliente, envia `200 OK` com o resultado, sendo o seguinte JSON:
+
+```JSON
+{ "approved": true, "score": 0 } // Aprovado
+{ "approved": false, "score": 1 } // Reprovado
 ```
 
 ## Licença
