@@ -4,9 +4,10 @@ services:
     environment:
       - GOMAXPROCS=1
       - GOGC=800
+      - SOCKET_PATH=/tmp/api1.sock
     volumes:
       - ./resources:/app/resources:ro
-      - socket1:/tmp
+      - shared-socket:/tmp
     deploy:
       resources:
         limits:
@@ -20,9 +21,10 @@ services:
     environment:
       - GOMAXPROCS=1
       - GOGC=800
+      - SOCKET_PATH=/tmp/api2.sock
     volumes:
       - ./resources:/app/resources:ro
-      - socket2:/tmp
+      - shared-socket:/tmp
     deploy:
       resources:
         limits:
@@ -37,8 +39,7 @@ services:
       - "9999:9999"
     volumes:
       - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
-      - socket1:/tmp/api1
-      - socket2:/tmp/api2
+      - shared-socket:/tmp:ro
     depends_on:
       - api1
       - api2
@@ -55,5 +56,4 @@ networks:
     driver: bridge
 
 volumes:
-  socket1:
-  socket2:
+  shared-socket:
