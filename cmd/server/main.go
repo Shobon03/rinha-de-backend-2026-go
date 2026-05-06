@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"ivf-golang/internal/api"
 	"ivf-golang/internal/models"
 	"ivf-golang/internal/util"
@@ -31,14 +32,26 @@ func main() {
 	defer listener.Close()
 
 	os.Chmod(socketPath, 0777)
-	log.Println("Socket UDS created in:", socketPath)
+
+	defer func() {
+		if r := recover(); r != nil {
+			crashMsg := fmt.Sprintf("CRASH NA INICIALIZACAO: %v", r)
+			log.Println(crashMsg)
+
+			http.HandleFunc("/ready", func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(crashMsg))
+			})
+
+			http.Serve(listener, nil)
+		}
+	}()
 
 	state := &api.ApiState{
 		Normalization: util.LoadFileJson[models.Normalization]("normalization.json"),
 		MccRisk:       util.LoadFileJson[models.MccRisk]("mcc_risk.json"),
 		IVF:           vector.LoadIVF(),
 	}
-	log.Println("Data loaded into memory!")
 
 	api.RegisterRoutes(state)
 
