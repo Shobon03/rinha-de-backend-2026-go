@@ -1,6 +1,6 @@
 services:
   api1:
-    image: shobon03/rinha-backend-2026-go@sha256:9fbb9f9970f60c6adf8cea308e8483fa1dd39ddb2ffba713477e173c507b2759
+    image: shobon03/rinha-backend-2026-go@sha256:5e7731201d492b3775477ba41bd08ba80b7825a70571904741404913b8a11824
     security_opt:
       - seccomp=unconfined
     environment:
@@ -18,7 +18,7 @@ services:
       - rinha-network
 
   api2:
-    image: shobon03/rinha-backend-2026-go@sha256:9fbb9f9970f60c6adf8cea308e8483fa1dd39ddb2ffba713477e173c507b2759
+    image: shobon03/rinha-backend-2026-go@sha256:5e7731201d492b3775477ba41bd08ba80b7825a70571904741404913b8a11824
     security_opt:
       - seccomp=unconfined
     environment:
