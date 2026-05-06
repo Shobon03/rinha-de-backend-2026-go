@@ -30,7 +30,7 @@ func GetCentroids(vector models.Vector, centroids models.Centroids) []CentroidDi
 	}
 
 	for i, centroid := range centroids {
-		dist := util.CalculateEuclidianDistance(vector, centroid)
+		dist := util.CalculateEuclidianDistance(vector, centroid, best[3].Distance)
 
 		if dist < best[3].Distance {
 			best[3] = CentroidDistance{Index: i, Distance: dist}

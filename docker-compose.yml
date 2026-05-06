@@ -1,5 +1,6 @@
 services:
   api1:
+    build: .
     image: shobon03/rinha-backend-2026-go:latest
     security_opt:
       - seccomp=unconfined
@@ -16,6 +17,7 @@ services:
       - socket-dir:/tmp
 
   api2:
+    build: .
     image: shobon03/rinha-backend-2026-go:latest
     security_opt:
       - seccomp=unconfined

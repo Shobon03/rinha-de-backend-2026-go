@@ -108,7 +108,7 @@ func SelectCentroids() {
 					minDist := float32(math.MaxFloat32)
 					bestC := 0
 					for j, c := range centroids {
-						dist := util.CalculateEuclidianDistance(ref.Vector, c.Vector)
+						dist := util.CalculateEuclidianDistance(ref.Vector, c.Vector, math.MaxFloat32)
 						if dist < minDist {
 							minDist = dist
 							bestC = j

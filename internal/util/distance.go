@@ -2,48 +2,87 @@ package util
 
 import "ivf-golang/internal/models"
 
-func CalculateEuclidianDistance(a models.Vector, b models.Vector) float32 {
+func CalculateEuclidianDistance(a models.Vector, b [14]float32, threshold float32) float32 {
 	var sum float32
 
 	// Manual unrolling for 14 dims
 	d0 := a[0] - b[0]
 	sum += d0 * d0
+	if sum >= threshold {
+		return sum
+	}
 
 	d1 := a[1] - b[1]
 	sum += d1 * d1
+	if sum >= threshold {
+		return sum
+	}
 
 	d2 := a[2] - b[2]
 	sum += d2 * d2
+	if sum >= threshold {
+		return sum
+	}
 
 	d3 := a[3] - b[3]
 	sum += d3 * d3
+	if sum >= threshold {
+		return sum
+	}
 
 	d4 := a[4] - b[4]
 	sum += d4 * d4
+	if sum >= threshold {
+		return sum
+	}
 
 	d5 := a[5] - b[5]
 	sum += d5 * d5
+	if sum >= threshold {
+		return sum
+	}
 
 	d6 := a[6] - b[6]
 	sum += d6 * d6
+	if sum >= threshold {
+		return sum
+	}
 
 	d7 := a[7] - b[7]
 	sum += d7 * d7
+	if sum >= threshold {
+		return sum
+	}
 
 	d8 := a[8] - b[8]
 	sum += d8 * d8
+	if sum >= threshold {
+		return sum
+	}
 
 	d9 := a[9] - b[9]
 	sum += d9 * d9
+	if sum >= threshold {
+		return sum
+	}
 
 	d10 := a[10] - b[10]
 	sum += d10 * d10
+	if sum >= threshold {
+		return sum
+	}
 
 	d11 := a[11] - b[11]
 	sum += d11 * d11
+	if sum >= threshold {
+		return sum
+	}
 
 	d12 := a[12] - b[12]
 	sum += d12 * d12
+	if sum >= threshold {
+		return sum
+	}
 
 	d13 := a[13] - b[13]
 	sum += d13 * d13
