@@ -6,14 +6,11 @@ services:
     environment:
       - GOMAXPROCS=1
       - GOGC=100
-      - SOCKET_PATH=/tmp/api1.sock
-    volumes:
-      - shared-socket:/tmp:rw
     deploy:
       resources:
         limits:
           cpus: "0.45"
-          memory: 155MB
+          memory: 150MB
     networks:
       - rinha-network
 
@@ -24,14 +21,11 @@ services:
     environment:
       - GOMAXPROCS=1
       - GOGC=100
-      - SOCKET_PATH=/tmp/api2.sock
-    volumes:
-      - shared-socket:/tmp:rw
     deploy:
       resources:
         limits:
           cpus: "0.45"
-          memory: 155MB
+          memory: 150MB
     networks:
       - rinha-network
 
@@ -41,7 +35,6 @@ services:
       - "9999:9999"
     volumes:
       - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
-      - shared-socket:/tmp:rw
     depends_on:
       - api1
       - api2
@@ -49,18 +42,10 @@ services:
       resources:
         limits:
           cpus: "0.1"
-          memory: 40MB
+          memory: 50MB
     networks:
       - rinha-network
 
 networks:
   rinha-network:
     driver: bridge
-
-volumes:
-  shared-socket:
-    driver: local
-    driver_opts:
-      type: tmpfs
-      device: tmpfs
-      o: size=16m,mode=0777
